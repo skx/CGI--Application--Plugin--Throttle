@@ -1,7 +1,7 @@
 
 =head1 NAME
 
-CGI::Application::Plugin::Throttle - Limit accesses to runmodes.
+CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application-based applications, using Redis for persistence.
 
 =head1 SYNOPSIS
 
@@ -98,7 +98,7 @@ Constructor.
 This method is used internally, and not expected to be invoked externally.
 
 The defaults are setup here, although they can be overridden in the
-</"configure"> method.
+L</"configure"> method.
 
 =cut
 
@@ -248,11 +248,11 @@ The maximum number of requests that the remote client may make, in the given per
 
 =item C<period>
 
-The period of time which requests are summed for.  The period is specified in second and if more thant C<limit> requests are sent then the client will be redirected.
+The period of time which requests are summed for.  The period is specified in seconds and if more than C<limit> requests are sent then the client will be redirected.
 
 =item C<prefix>
 
-This module uses L<Redis> to store the counts of client requests.  Redis is a key-value store, and each key used by this module is given a prefix to avoid collisions.  You may specify your own prefix here.
+This module uses L<Redis> to store the counts of client requests.  Redis is a key-value store, and each key used by this module is given a prefix to avoid collisions.  You may specify your prefix here.
 
 =item C<exceeded>
 
