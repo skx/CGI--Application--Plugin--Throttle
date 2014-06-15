@@ -28,7 +28,7 @@ This module allows you to enforce a throttle on incoming requests to
 your application, based upon the remote IP address.
 
 This module stores a count of accesses in a Redis key-store, and
-and once hits from a particular source exceeed the specified threshold
+once hits from a particular source exceeed the specified threshold
 the user will be redirected to the run-mode you've specified.
 
 =cut
@@ -36,7 +36,9 @@ the user will be redirected to the run-mode you've specified.
 =head1 POTENTIAL ISSUES / CONCERNS
 
 Users who share IP addresses, because they are behind a common-gateway
-for example, will all suffer if the threshold is too low.
+for example, will all suffer if the threshold is too low.  We attempt to
+mitigate this by building the key using a combination of the remote
+IP address, and the remote user-agent.
 
 This module will apply to all run-modes, because it seems likely that
 this is the most common case.  If you have a preference for some modes
@@ -120,7 +122,7 @@ sub new
 }
 
 
-=being doc
+=begin doc
 
 Allow the caller to gain access to the throttle object.
 
