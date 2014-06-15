@@ -1,0 +1,7 @@
+lib/CGI/Application/Plugin/Throttle.pm
+ChangeLog
+LICENSE
+Makefile.PL
+MANIFEST
+README.md
+META.yml
