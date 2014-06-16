@@ -9,3 +9,6 @@
 	- Allow the caller to see hits via the `count` method.
 	- Fixed POD errors.
 	- Avoid overwriting configuration values that aren't specified.
+
+0.4 - 16-06-2014
+	- Fixed missing return statement, rendering the redirect broken.

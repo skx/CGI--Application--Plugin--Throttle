@@ -60,7 +60,7 @@ use warnings;
 package CGI::Application::Plugin::Throttle;
 
 
-our $VERSION = '0.3';
+our $VERSION = '0.4';
 
 
 =head1 METHODS
@@ -275,6 +275,7 @@ sub throttle_callback
         if ( $self->{ 'exceeded' } )
         {
             $cgi_app->prerun_mode( $self->{ 'exceeded' } );
+            return;
         }
     }
 
