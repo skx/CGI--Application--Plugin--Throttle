@@ -1,7 +1,7 @@
 NAME
 ----
 
-    CGI::Application::Plugin::Throttle - Limit accesses to runmodes.
+    CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application-based applications, using Redis for persistence.
 
 SYNOPSIS
 --------
