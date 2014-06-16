@@ -112,14 +112,20 @@ sub new
     #
     #  Configure defaults.
     #
-    $self->{ 'limit' }    = 100;
-    $self->{ 'period' }   = 60;
+    $self->{ 'limit' }  = 100;
+    $self->{ 'period' } = 60;
+    $self->{ 'prefix' } = "THROTTLE";
+
+    #
+    #  Run mode to redirect to on exceed.
+    #
     $self->{ 'exceeded' } = "slow_down";
-    $self->{ 'prefix' }   = "THROTTLE";
+
 
     bless( $self, $class );
     return $self;
 }
+
 
 
 =head2 throttle
@@ -133,10 +139,89 @@ sub throttle
     my $cgi_app = shift;
     return $cgi_app->{ __throttle_obj } if $cgi_app->{ __throttle_obj };
 
-
-
     my $throttle = $cgi_app->{ __throttle_obj } = __PACKAGE__->new();
     return $throttle;
+}
+
+
+
+=head _get_redis_key
+
+Build and return the Redis key to use for this particular remote
+request.
+
+The key is built from the C<prefix> string set in L</"configure"> method,
+along with:
+
+=over 8
+
+=item The remote IP address of the client.
+
+=item The remote HTTP Basic-Auth username of the client.
+
+=item The remote User-Agent
+
+=back
+
+=cut
+
+sub _get_redis_key
+{
+    my $self = shift;
+    my $key  = $self->{ 'prefix' };
+
+    #
+    #  Build up the key based on the:
+    #
+    #  1.  User using HTTP Basic-Auth, if present.
+    #  2.  The remote IP address.
+    #  3.  The remote user-agent.
+    #
+    foreach my $env (qw! REMOTE_USER REMOTE_ADDR HTTP_USER_AGENT !)
+    {
+        if ( $ENV{ $env } )
+        {
+            $key .= ":";
+            $key .= $ENV{ $env };
+        }
+    }
+
+    return ($key);
+}
+
+
+=head2 count
+
+Return the number of times the remote client has hit a run mode, along
+with the maximum allowed visits:
+
+=for example begin
+
+      sub your_run_mode
+      {
+          my ($self) = (@_);
+
+          my( $count, $max ) = $self->throttle()->count();
+          return( "$count visits seen - maximum is $max." );
+      }
+
+=for example end
+
+=cut
+
+sub count
+{
+    my ($self) = (@_);
+
+    my $visits = 0;
+    my $max    = $self->{ 'limit' };
+
+    if ( $self->{ 'redis' } )
+    {
+        my $key = $self->_get_redis_key();
+        $visits = $self->{ 'redis' }->get($key);
+    }
+    return ( $visits, $max );
 }
 
 
@@ -166,25 +251,8 @@ sub throttle_callback
     #
     # The key relating to this user.
     #
-    my $key = $self->{ 'prefix' };
+    my $key = $self->_get_redis_key();
 
-    #
-    #  Build up the key based on the:
-    #
-    #  1.  User using HTTP Basic-Auth, if present.
-    #  2.  The remote IP address.
-    #  3.  The remote user-agent.
-    #
-    foreach my $env (qw! REMOTE_USER REMOTE_ADDR HTTP_USER_AGENT !)
-    {
-        if ( $ENV{ $env } )
-        {
-            $key .= ":";
-            $key .= $ENV{ $env };
-        }
-    }
-
-    #
     #  Increase the count, and set the expiry.
     #
     $redis->incr($key);
@@ -200,7 +268,13 @@ sub throttle_callback
     #
     if ( ($cur) && ( $self->{ 'exceeded' } ) && ( $cur > $self->{ 'limit' } ) )
     {
-        $cgi_app->prerun_mode( $self->{ 'exceeded' } );
+        #
+        #  Redirect to a different run-mode..
+        #
+        if ( $self->{ 'exceeded' } )
+        {
+            $cgi_app->prerun_mode( $self->{ 'exceeded' } );
+        }
     }
 
     #
@@ -208,8 +282,8 @@ sub throttle_callback
     #
     if ( $cgi_app->query->url_param( $cgi_app->mode_param ) )
     {
-        $cgi_app->prerun_mode($cgi_app->query->url_param( $cgi_app->mode_param )
-                             );
+        $cgi_app->prerun_mode(
+                           $cgi_app->query->url_param( $cgi_app->mode_param ) );
     }
 
 }
@@ -271,23 +345,24 @@ sub configure
     #
     #   100 requests in 60 seconds.
     #
-    $self->{ 'limit' }  = $args{ 'limit' }  || 100;
-    $self->{ 'period' } = $args{ 'period' } || 60;
+    $self->{ 'limit' }  = $args{ 'limit' }  if ( $args{ 'limit' } );
+    $self->{ 'period' } = $args{ 'period' } if ( $args{ 'period' } );
 
     #
     #  Redis key-prefix
     #
-    $self->{ 'prefix' } = $args{ 'prefix' } || "THROTTLE";
+    $self->{ 'prefix' } = $args{ 'prefix' } if ( $args{ 'prefix' } );
 
     #
     #  The handle to Redis for state-tracking
     #
-    $self->{ 'redis' } = $args{ 'redis' };
+    $self->{ 'redis' } = $args{ 'redis' } if ( $args{ 'redis' } );
 
     #
     #  The run-mode to redirect to on violition.
     #
-    $self->{ 'exceeded' } = $args{ 'exceeded' } || "slow_down";
+    $self->{ 'exceeded' } = $args{ 'exceeded' } if ( $args{ 'exceeded' } );
+
 }
 
 
