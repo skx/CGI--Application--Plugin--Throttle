@@ -268,6 +268,7 @@ sub throttle_callback
     #
     if ( ($cur) && ( $self->{ 'exceeded' } ) && ( $cur > $self->{ 'limit' } ) )
     {
+
         #
         #  Redirect to a different run-mode..
         #
