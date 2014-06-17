@@ -1,10 +1,7 @@
 NAME
-----
-
     CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application-based applications, using Redis for persistence.
 
 SYNOPSIS
---------
 
       use CGI::Application::Plugin::Throttle;
 
@@ -23,6 +20,7 @@ SYNOPSIS
                                       period => 60,
                                       exceeded => "slow_down_champ" );
 
+
 DESCRIPTION
 -----------
 
@@ -30,8 +28,9 @@ This module allows you to enforce a throttle on incoming requests to
 your application, based upon the remote IP address.
 
 This module stores a count of accesses in a Redis key-store, and once
-hits from a particular source exceeed the specified threshold the user
+hits from a particular source exceed the specified threshold the user
 will be redirected to the run-mode you've specified.
+
 
 POTENTIAL ISSUES / CONCERNS
 ---------------------------
@@ -44,9 +43,9 @@ This module will apply to all run-modes, because it seems likely that
 this is the most common case. If you have a preference for some modes to
 be excluded please do contact the author.
 
+
 AUTHOR
 ------
-
 Steve Kemp <steve@steve.org.uk>
 
 COPYRIGHT AND LICENSE
