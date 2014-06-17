@@ -112,7 +112,11 @@ sub new
     #
     $self->{ 'limit' }  = 100;
     $self->{ 'period' } = 60;
-    $self->{ 'prefix' } = "THROTTLE";
+
+    #
+    #  The redis key-prefix.
+    #
+    $self->{ 'prefix' } = $supplied{ 'prefix' } || "THROTTLE";
 
     #
     #  Run mode to redirect to on exceed.
@@ -138,7 +142,17 @@ sub throttle
     my $cgi_app = shift;
     return $cgi_app->{ __throttle_obj } if $cgi_app->{ __throttle_obj };
 
-    my $throttle = $cgi_app->{ __throttle_obj } = __PACKAGE__->new();
+    #
+    #  Setup the prefix of the Redis keys to default to the name of
+    # the CGI::Application.
+    #
+    #  This avoids collisions if multiple applications are running on
+    # the same host, and the developer won't need to explicitly setup
+    # distinct prefixes.
+    #
+    my $throttle = $cgi_app->{ __throttle_obj } =
+      __PACKAGE__->new( prefix => ref $cgi_app );
+
     return $throttle;
 }
 
@@ -335,6 +349,8 @@ The period of time which requests are summed for.  The period is specified in se
 =item C<prefix>
 
 This module uses L<Redis> to store the counts of client requests.  Redis is a key-value store, and each key used by this module is given a prefix to avoid collisions.  You may specify your prefix here.
+
+The prefix will default to the name of your application class if it isn't set explicitly, which should avoid collisions if you're running multiple applications on the same host.
 
 =item C<exceeded>
 
