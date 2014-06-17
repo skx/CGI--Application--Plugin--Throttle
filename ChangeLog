@@ -12,3 +12,6 @@
 
 0.4 - 16-06-2014
 	- Fixed missing return statement, rendering the redirect broken.
+
+0.5 - xx-xx-xxx
+	- Minor POD formatting fixups.

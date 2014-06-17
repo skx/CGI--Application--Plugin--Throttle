@@ -32,7 +32,7 @@ This module allows you to enforce a throttle on incoming requests to
 your application, based upon the remote IP address.
 
 This module stores a count of accesses in a Redis key-store, and
-once hits from a particular source exceeed the specified threshold
+once hits from a particular source exceed the specified threshold
 the user will be redirected to the run-mode you've specified.
 
 =cut
@@ -383,7 +383,7 @@ sub configure
     $self->{ 'redis' } = $args{ 'redis' } if ( $args{ 'redis' } );
 
     #
-    #  The run-mode to redirect to on violition.
+    #  The run-mode to redirect to on violation.
     #
     $self->{ 'exceeded' } = $args{ 'exceeded' } if ( $args{ 'exceeded' } );
 
