@@ -15,3 +15,6 @@
 
 0.5 - xx-xx-xxx
 	- Minor POD formatting fixups.
+	- Ran POD through spell-checker.
+	- Default the Redis-key prefix to the Application class to avoid
+  	  collisions if you're running multiple applications on one host.
