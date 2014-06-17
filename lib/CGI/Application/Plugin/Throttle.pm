@@ -93,8 +93,6 @@ sub import
 
 =head2 new
 
-Constructor.
-
 This method is used internally, and not expected to be invoked externally.
 
 The defaults are setup here, although they can be overridden in the
@@ -130,7 +128,8 @@ sub new
 
 =head2 throttle
 
-Gain access to the throttle object.
+Gain access to an instance of this class.  This is the method by which you
+can call methods on this plugin from your L<CGI::Application> derived-class.
 
 =cut
 
@@ -155,11 +154,17 @@ along with:
 
 =over 8
 
-=item The remote IP address of the client.
+=item *
 
-=item The remote HTTP Basic-Auth username of the client.
+The remote IP address of the client.
 
-=item The remote User-Agent
+=item *
+
+The remote HTTP Basic-Auth username of the client.
+
+=item *
+
+The remote User-Agent.
 
 =back
 
@@ -295,8 +300,7 @@ sub throttle_callback
 
 This method is what the user will invoke to configure the throttle-limits.
 
-It is expected that within the users L<CGI::Application> setup method
-there will be code similar to this:
+It is expected that within the users L<CGI::Application> L<CGI::Application/setup> method there will be code similar to this:
 
 =for example begin
 
@@ -305,7 +309,9 @@ there will be code similar to this:
 
         my $r = Redis->new();
 
-        $self->throttle()->configure( %args )
+        $self->throttle()->configure( redis => $r,
+                                      # .. other options here
+                                    )
     }
 
 =for example end
