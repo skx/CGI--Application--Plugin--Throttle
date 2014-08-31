@@ -79,7 +79,9 @@ sub import
     my $callpkg = caller;
 
     {
+        ## no critic
         no strict qw(refs);
+        ## use critic
         *{ $callpkg . '::throttle' } = \&throttle;
     }
 
