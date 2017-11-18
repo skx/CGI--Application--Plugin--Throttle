@@ -36,8 +36,6 @@ my %WriteMakefileArgs = (
                'https://github.com/skx/CGI--Application--Plugin--Throttle/issues',
              repository =>
                'https://github.com/skx/CGI--Application--Plugin--Throttle.git',
-             GitMirror =>
-               'http://git.steve.org.uk/cpan/CGI--Application--Plugin--Throttle',
          },
     },
 );
