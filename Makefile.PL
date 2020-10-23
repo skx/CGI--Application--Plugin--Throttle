@@ -22,7 +22,7 @@ my %WriteMakefileArgs = (
         'Test::Strict'    => 0,
     },
 
-    ABSTRACT => 'Rate-Limiting for CGI::Application-based applications, using Redis for persistence.',
+    ABSTRACT => 'Rate-Limiting for CGI::Application.',
     AUTHOR   => 'Steve Kemp <steve@steve.org.uk>',
     LICENSE  => "perl",
 
