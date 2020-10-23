@@ -1,10 +1,7 @@
 NAME
-    CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application-based applications, using Redis for persistence.
+----
 
-SYNOPSIS
-
-      use CGI::Application::Plugin::Throttle;
-
+CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application
 
       # Your application
       sub setup {
@@ -20,6 +17,8 @@ SYNOPSIS
           period => 60,
           exceeded => "slow_down_champ"
         );
+SYNOPSIS
+--------
 
 
 DESCRIPTION
