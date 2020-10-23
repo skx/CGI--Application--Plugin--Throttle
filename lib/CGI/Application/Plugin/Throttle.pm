@@ -1,7 +1,10 @@
+package CGI::Application::Plugin::Throttle;
 
 =head1 NAME
 
-CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application-based applications, using Redis for persistence.
+CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application
+
+
 
 =head1 SYNOPSIS
 
@@ -30,11 +33,14 @@ CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application-based ap
     }
 
 
-
-
-
-
 =cut
+
+
+
+=head1 VERSION
+
+This is version '0.6'
+
 
 
 =head1 DESCRIPTION
@@ -46,7 +52,6 @@ This module stores a count of accesses in a Redis key-store, and once hits from
 a particular source exceed the specified threshold the user will be redirected
 to the run-mode you've specified.
 
-=cut
 
 
 =head1 POTENTIAL ISSUES / CONCERNS
@@ -64,20 +69,20 @@ please do contact the author.
 
 
 
-
 use strict;
 use warnings;
-
-package CGI::Application::Plugin::Throttle;
-
 
 our $VERSION = '0.6';
 
 
+
 =head1 METHODS
 
+=cut
 
-=head2 import
+
+
+=head2 C<import>
 
 Force the C<throttle> method into the caller's namespace, and configure the
 prerun hook which is used by L<CGI::Application>.
@@ -104,7 +109,8 @@ sub import
 }
 
 
-=head2 new
+
+=head2 C<new>
 
 This method is used internally, and not expected to be invoked externally.
 
@@ -143,7 +149,7 @@ sub new
 
 
 
-=head2 throttle
+=head2 C<throttle>
 
 Gain access to an instance of this class.  This is the method by which you can
 call methods on this plugin from your L<CGI::Application> derived-class.
@@ -171,7 +177,7 @@ sub throttle
 
 
 
-=head2 _get_redis_key
+=head2 C<_get_redis_key>
 
 Build and return the Redis key to use for this particular remote request.
 
@@ -221,22 +227,28 @@ sub _get_redis_key
 }
 
 
-=head2 count
 
-Return the number of times the remote client has hit a run mode, along with the
-maximum allowed visits:
+=head2 C<count>
+
+Returns two values: the number of times the remote client has hit a run mode,
+along with the maximum allowed visits:
 
 =for example begin
 
-      sub your_run_mode
-      {
-          my ($self) = (@_);
-
-          my( $count, $max ) = $self->throttle()->count();
-          return( "$count visits seen - maximum is $max." );
-      }
+    sub your_run_mode
+    {
+        my ($self) = (@_);
+        
+        my( $count, $max ) = $self->throttle()->count();
+        return( "$count visits seen - maximum is $max." );
+    }
 
 =for example end
+
+=head3 warning
+
+This method must be called in list context, in scalar context, the result will
+always be '2'.
 
 =cut
 
@@ -256,7 +268,8 @@ sub count
 }
 
 
-=head2 throttle_callback
+
+=head2 C<throttle_callback>
 
 This method is invoked by L<CGI::Application>, as a hook.
 
@@ -321,7 +334,8 @@ sub throttle_callback
 }
 
 
-=head2 configure
+
+=head2 C<configure>
 
 This method is what the user will invoke to configure the throttle-limits.
 
@@ -413,11 +427,9 @@ sub configure
 
 Steve Kemp <steve@steve.org.uk>
 
-=cut
-
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2014 Steve Kemp <steve@steve.org.uk>.
+Copyright (C) 2014..2020 Steve Kemp <steve@steve.org.uk>.
 
 This library is free software. You can modify and or distribute it under the
 same terms as Perl itself.
