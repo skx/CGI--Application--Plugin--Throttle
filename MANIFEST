@@ -1,10 +1,9 @@
-lib/CGI/Application/Plugin/Throttle.pm
 ChangeLog
 LICENSE
-Makefile.PL
 MANIFEST
+Makefile.PL
 README.md
-META.yml
+lib/CGI/Application/Plugin/Throttle.pm
 t/00-load.t
 t/manifest.t
 t/pod.t
