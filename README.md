@@ -3,22 +3,32 @@ NAME
 
 CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application
 
-      # Your application
-      sub setup {
-        ...
-
-        # Create a redis handle
-        my $redis = Redis->new();
-
-        # Configure throttling
-        $self->throttle()->configure( redis => $redis,
-          prefix => "REDIS:KEY:PREFIX",
-          limit => 100,
-          period => 60,
-          exceeded => "slow_down_champ"
-        );
 SYNOPSIS
 --------
+
+    use CGI::Application::Plugin::Throttle;
+    
+    
+    # Your application
+    sub setup {
+        
+      ...
+      
+      # Create a redis handle
+      my $redis = Redis->new();
+      
+      # Configure throttling
+      $self->throttle()->configure(
+        redis     => $redis,
+        prefix    => "REDIS:KEY:PREFIX",
+        limit     => 100,
+        period    => 60,
+        exceeded  => "slow_down_champ"
+      );
+      
+      ...
+      
+    }
 
 
 DESCRIPTION
