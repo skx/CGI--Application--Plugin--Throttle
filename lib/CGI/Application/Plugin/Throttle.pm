@@ -1,75 +1,91 @@
+package CGI::Application::Plugin::Throttle;
 
 =head1 NAME
 
-CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application-based applications, using Redis for persistence.
+CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application
+
+
 
 =head1 SYNOPSIS
 
-  use CGI::Application::Plugin::Throttle;
-
-
-  # Your application
-  sub setup {
-    ...
-
-    # Create a redis handle
-    my $redis = Redis->new();
-
-    # Configure throttling
-    $self->throttle()->configure( redis => $redis,
-                                  prefix => "REDIS:KEY:PREFIX",
-                                  limit => 100,
-                                  period => 60,
-                                  exceeded => "slow_down_champ" );
+    use CGI::Application::Plugin::Throttle;
+    
+    
+    # Your application
+    sub setup {
+        
+      ...
+      
+      # Create a redis handle
+      my $redis = Redis->new();
+      
+      # Configure throttling
+      $self->throttle()->configure(
+        redis     => $redis,
+        prefix    => "REDIS:KEY:PREFIX",
+        limit     => 100,
+        period    => 60,
+        exceeded  => "slow_down_champ"
+      );
+      
+      ...
+      
+    }
 
 
 =cut
+
+
+
+=head1 VERSION
+
+This is version '0.6'
+
 
 
 =head1 DESCRIPTION
 
-This module allows you to enforce a throttle on incoming requests to
-your application, based upon the remote IP address.
+This module allows you to enforce a throttle on incoming requests to your
+application, based upon the remote IP address.
 
-This module stores a count of accesses in a Redis key-store, and
-once hits from a particular source exceed the specified threshold
-the user will be redirected to the run-mode you've specified.
+This module stores a count of accesses in a Redis key-store, and once hits from
+a particular source exceed the specified threshold the user will be redirected
+to the run-mode you've specified.
 
-=cut
 
 
 =head1 POTENTIAL ISSUES / CONCERNS
 
-Users who share IP addresses, because they are behind a common-gateway
-for example, will all suffer if the threshold is too low.  We attempt to
-mitigate this by building the key using a combination of the remote
-IP address, and the remote user-agent.
+Users who share IP addresses, because they are behind a common-gateway for
+example, will all suffer if the threshold is too low.  We attempt to mitigate
+this by building the key using a combination of the remote IP address, and the
+remote user-agent.
 
-This module will apply to all run-modes, because it seems likely that
-this is the most common case.  If you have a preference for some modes
-to be excluded please do contact the author.
+This module will apply to all run-modes, because it seems likely that this is
+the most common case.  If you have a preference for some modes to be excluded
+please do contact the author.
 
 =cut
-
 
 
 
 use strict;
 use warnings;
 
-package CGI::Application::Plugin::Throttle;
-
-
 our $VERSION = '0.6';
+
 
 
 =head1 METHODS
 
+=cut
 
-=head2 import
 
-Force the C<throttle> method into the caller's namespace, and
-configure the prerun hook which is used by L<CGI::Application>.
+
+=head2 C<import>
+
+Force the C<throttle> method into the caller's namespace, and configure the
+prerun hook which is used by L<CGI::Application>.
 
 =cut
 
@@ -93,7 +109,8 @@ sub import
 }
 
 
-=head2 new
+
+=head2 C<new>
 
 This method is used internally, and not expected to be invoked externally.
 
@@ -132,10 +149,10 @@ sub new
 
 
 
-=head2 throttle
+=head2 C<throttle>
 
-Gain access to an instance of this class.  This is the method by which you
-can call methods on this plugin from your L<CGI::Application> derived-class.
+Gain access to an instance of this class.  This is the method by which you can
+call methods on this plugin from your L<CGI::Application> derived-class.
 
 =cut
 
@@ -160,15 +177,14 @@ sub throttle
 
 
 
-=head2 _get_redis_key
+=head2 C<_get_redis_key>
 
-Build and return the Redis key to use for this particular remote
-request.
+Build and return the Redis key to use for this particular remote request.
 
-The key is built from the C<prefix> string set in L</"configure"> method,
-along with:
+The key is built from the C<prefix> string set in L</"configure"> method, along
+with:
 
-=over 8
+=over
 
 =item *
 
@@ -211,22 +227,28 @@ sub _get_redis_key
 }
 
 
-=head2 count
 
-Return the number of times the remote client has hit a run mode, along
-with the maximum allowed visits:
+=head2 C<count>
+
+Returns two values: the number of times the remote client has hit a run mode,
+along with the maximum allowed visits:
 
 =for example begin
 
-      sub your_run_mode
-      {
-          my ($self) = (@_);
-
-          my( $count, $max ) = $self->throttle()->count();
-          return( "$count visits seen - maximum is $max." );
-      }
+    sub your_run_mode
+    {
+        my ($self) = (@_);
+        
+        my( $count, $max ) = $self->throttle()->count();
+        return( "$count visits seen - maximum is $max." );
+    }
 
 =for example end
+
+=head3 warning
+
+This method must be called in list context, in scalar context, the result will
+always be '2'.
 
 =cut
 
@@ -246,16 +268,16 @@ sub count
 }
 
 
-=head2 throttle_callback
+
+=head2 C<throttle_callback>
 
 This method is invoked by L<CGI::Application>, as a hook.
 
-The method is responsible for determining whether the remote client
-which triggered the current request has exceeded their request
-threshold.
+The method is responsible for determining whether the remote client which
+triggered the current request has exceeded their request threshold.
 
-If the client has made too many requests their intended run-mode will
-be changed to to redirect them.
+If the client has made too many requests their intended run-mode will be changed
+to redirect them.
 
 =cut
 
@@ -312,11 +334,13 @@ sub throttle_callback
 }
 
 
-=head2 configure
+
+=head2 C<configure>
 
 This method is what the user will invoke to configure the throttle-limits.
 
-It is expected that within the users L<CGI::Application> L<CGI::Application/setup> method there will be code similar to this:
+It is expected that within the users L<CGI::Application>
+L<CGI::Application/setup> method there will be code similar to this:
 
 =for example begin
 
@@ -334,7 +358,7 @@ It is expected that within the users L<CGI::Application> L<CGI::Application/setu
 
 The arguments hash contains the following known keys:
 
-=over 8
+=over
 
 =item C<redis>
 
@@ -342,21 +366,29 @@ A L<Redis> handle object.
 
 =item C<limit>
 
-The maximum number of requests that the remote client may make, in the given period of time.
+The maximum number of requests that the remote client may make, in the given
+period of time.
 
 =item C<period>
 
-The period of time which requests are summed for.  The period is specified in seconds and if more than C<limit> requests are sent then the client will be redirected.
+The period of time which requests are summed for.  The period is specified in
+seconds and if more than C<limit> requests are sent then the client will be
+redirected.
 
 =item C<prefix>
 
-This module uses L<Redis> to store the counts of client requests.  Redis is a key-value store, and each key used by this module is given a prefix to avoid collisions.  You may specify your prefix here.
+This module uses L<Redis> to store the counts of client requests.  Redis is a
+key-value store, and each key used by this module is given a prefix to avoid
+collisions.  You may specify your prefix here.
 
-The prefix will default to the name of your application class if it isn't set explicitly, which should avoid collisions if you're running multiple applications on the same host.
+The prefix will default to the name of your application class if it isn't set
+explicitly, which should avoid collisions if you're running multiple
+applications on the same host.
 
 =item C<exceeded>
 
-The C<run_mode> to redirect the client to, when their request-count has exceeded the specified limit.
+The C<run_mode> to redirect the client to, when their request-count has exceeded
+the specified limit.
 
 =back
 
@@ -367,9 +399,7 @@ sub configure
     my ( $self, %args ) = (@_);
 
     #
-    #  Default rate-limiting period:
-    #
-    #   100 requests in 60 seconds.
+    #  The rate-limiting number of requests per time period
     #
     $self->{ 'limit' }  = $args{ 'limit' }  if ( $args{ 'limit' } );
     $self->{ 'period' } = $args{ 'period' } if ( $args{ 'period' } );
@@ -397,14 +427,12 @@ sub configure
 
 Steve Kemp <steve@steve.org.uk>
 
-=cut
-
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2014 Steve Kemp <steve@steve.org.uk>.
+Copyright (C) 2014..2020 Steve Kemp <steve@steve.org.uk>.
 
-This library is free software. You can modify and or distribute it under
-the same terms as Perl itself.
+This library is free software. You can modify and or distribute it under the
+same terms as Perl itself.
 
 =cut
 

@@ -4,25 +4,23 @@ use warnings;
 
 use 5.008;
 
-use ExtUtils::MakeMaker 6.30;
+use ExtUtils::MakeMaker 6.64;
 
 
 my %WriteMakefileArgs = (
     NAME         => 'CGI::Application::Plugin::Throttle',
     VERSION_FROM => 'lib/CGI/Application/Plugin/Throttle.pm',
-    PREREQ_PM    => {
-                   'CGI::Application' => 0,
-                   'Redis'            => 0,
-                 },
 
-    BUILD_REQUIRES => {
-        'Test::More'   => 0,
-        'Test::NoTabs' => 0,
-        'Test::Pod'    => 0,
-        'Test::Strict'    => 0,
+    TEST_REQUIRES => {
+        'File::Find'          => 0,
+        'Test::CheckManifest' => 0.9,
+        'Test::More'          => 0,
+        'Test::NoTabs'        => 0,
+        'Test::Pod'           => 0,
+        'Test::Strict'        => 0,
     },
 
-    ABSTRACT => 'Rate-Limiting for CGI::Application-based applications, using Redis for persistence.',
+    ABSTRACT => 'Rate-Limiting for CGI::Application.',
     AUTHOR   => 'Steve Kemp <steve@steve.org.uk>',
     LICENSE  => "perl",
 
