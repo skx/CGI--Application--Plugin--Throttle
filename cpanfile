@@ -1,6 +1,7 @@
 suggests                "CGI::Application";
 suggests                "Redis";
 
+requires                "Digest::SHA" => '5.60'; # last update on sha512
 build_requires          "ExtUtils::MakeMaker" => '6.64';
 
 test_requires           "Test::More";

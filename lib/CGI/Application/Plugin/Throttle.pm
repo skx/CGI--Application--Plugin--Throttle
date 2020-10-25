@@ -74,6 +74,7 @@ use warnings;
 
 our $VERSION = '0.6';
 
+use Digest::SHA qw/sha512_base64/;
 
 
 =head1 METHODS
@@ -422,6 +423,17 @@ sub configure
 }
 
 
+# returns a 'key'
+#
+# This routine will take the normal key and adds a 'timeslot' to it, so all keys
+# will now fall in the same group during the time interval of the 'period'
+# Since the key is becomming uglier, we just base64 encode the sha512 hash
+#
+sub _digest_key_in_timeslot
+{
+    my ($self, $key ) = @_;
+    sha512_base64( $key . q{#} . (time() / $self->{ 'period' }) )
+}
 
 =head1 AUTHOR
 

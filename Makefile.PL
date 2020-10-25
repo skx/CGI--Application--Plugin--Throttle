@@ -11,6 +11,10 @@ my %WriteMakefileArgs = (
     NAME         => 'CGI::Application::Plugin::Throttle',
     VERSION_FROM => 'lib/CGI/Application/Plugin/Throttle.pm',
 
+    PREREQ_PM => {
+        'Digest::SHA'         => 5.6,
+    }
+
     TEST_REQUIRES => {
         'File::Find'          => 0,
         'Test::CheckManifest' => 0.9,
