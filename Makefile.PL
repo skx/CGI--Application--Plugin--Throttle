@@ -12,16 +12,20 @@ my %WriteMakefileArgs = (
     VERSION_FROM => 'lib/CGI/Application/Plugin/Throttle.pm',
 
     PREREQ_PM => {
-        'Digest::SHA'         => 5.6,
-    }
+        'Digest::SHA'                   => 5.6,
+    },
 
     TEST_REQUIRES => {
-        'File::Find'          => 0,
-        'Test::CheckManifest' => 0.9,
-        'Test::More'          => 0,
-        'Test::NoTabs'        => 0,
-        'Test::Pod'           => 0,
-        'Test::Strict'        => 0,
+        'CGI::Application'              => 0,
+        'File::Find'                    => 0,
+        'Test::CheckManifest'           => 0.9,
+        'Test::Mock::Redis'             => 0,
+        'Test::More'                    => 0,
+        'Test::NoTabs'                  => 0,
+        'Test::Pod'                     => 0,
+        'Test::Strict'                  => 0,
+        'Test::Time'                    => 0,
+        'Test::WWW::Mechanize::CGIApp'  => 0,
     },
 
     ABSTRACT => 'Rate-Limiting for CGI::Application.',
