@@ -74,6 +74,7 @@ use warnings;
 
 our $VERSION = '0.6';
 
+use Digest::SHA qw/sha512_base64/;
 
 
 =head1 METHODS
@@ -262,7 +263,8 @@ sub count
     if ( $self->{ 'redis' } )
     {
         my $key = $self->_get_redis_key();
-        $visits = $self->{ 'redis' }->get($key);
+        $key = $self->_digest_key_in_timeslot($key);
+        $visits = $self->{ 'redis' }->llen($key);
     }
     return ( $visits, $max );
 }
@@ -296,15 +298,16 @@ sub throttle_callback
     #
     my $key = $self->_get_redis_key();
 
-    #  Increase the count, and set the expiry.
     #
-    $redis->incr($key);
-    $redis->expire( $key, $self->{ 'period' } );
+    # Use a timeslot defined digest key instead
+    #
+    $key = $self->_digest_key_in_timeslot($key);
 
     #
-    #  Get the current hit-count.
+    #  Increase the count, and set the expiry.
     #
-    my $cur = $redis->get($key);
+    my $cur = $redis->lpush($key, 1); # or any arbitrary value would suffice
+    $redis->expire( $key, $self->{ 'period' } ) if $cur == 1;
 
     #
     #  If too many redirect.
@@ -422,6 +425,17 @@ sub configure
 }
 
 
+# returns a 'key'
+#
+# This routine will take the normal key and adds a 'timeslot' to it, so all keys
+# will now fall in the same group during the time interval of the 'period'
+# Since the key is becomming uglier, we just base64 encode the sha512 hash
+#
+sub _digest_key_in_timeslot
+{
+    my ($self, $key ) = @_;
+    sha512_base64( $key . q{#} . (time() / $self->{ 'period' }) )
+}
 
 =head1 AUTHOR
 
