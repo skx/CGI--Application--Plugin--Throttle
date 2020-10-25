@@ -263,7 +263,8 @@ sub count
     if ( $self->{ 'redis' } )
     {
         my $key = $self->_get_redis_key();
-        $visits = $self->{ 'redis' }->get($key);
+        $key = $self->_digest_key_in_timeslot($key);
+        $visits = $self->{ 'redis' }->llen($key);
     }
     return ( $visits, $max );
 }
@@ -297,15 +298,16 @@ sub throttle_callback
     #
     my $key = $self->_get_redis_key();
 
-    #  Increase the count, and set the expiry.
     #
-    $redis->incr($key);
-    $redis->expire( $key, $self->{ 'period' } );
+    # Use a timeslot defined digest key instead
+    #
+    $key = $self->_digest_key_in_timeslot($key);
 
     #
-    #  Get the current hit-count.
+    #  Increase the count, and set the expiry.
     #
-    my $cur = $redis->get($key);
+    my $cur = $redis->lpush($key, 1); # or any arbitrary value would suffice
+    $redis->expire( $key, $self->{ 'period' } ) if $cur == 1;
 
     #
     #  If too many redirect.
