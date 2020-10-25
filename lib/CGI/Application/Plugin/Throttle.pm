@@ -434,7 +434,7 @@ sub configure
 sub _digest_key_in_timeslot
 {
     my ($self, $key ) = @_;
-    sha512_base64( $key . q{#} . (time() / $self->{ 'period' }) )
+    sha512_base64( $key . q{#} . int(time() / $self->{ 'period' }) )
 }
 
 =head1 AUTHOR
