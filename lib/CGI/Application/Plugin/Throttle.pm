@@ -299,6 +299,11 @@ sub throttle_callback
     my $key = $self->_get_key();
 
     #
+    # Get throttle rule
+    #
+    my $rule = $self->_get_throttle_rule();
+    
+    #
     # Use a timeslot defined digest key instead
     #
     $key = $self->_digest_key_in_timeslot($key);
@@ -312,15 +317,15 @@ sub throttle_callback
     #
     #  If too many redirect.
     #
-    if ( ($cur) && ( $self->{ 'exceeded' } ) && ( $cur > $self->{ 'limit' } ) )
+    if ( ($cur) && ( $rule->{ 'exceeded' } ) && ( $cur > $rule->{ 'limit' } ) )
     {
 
         #
         #  Redirect to a different run-mode..
         #
-        if ( $self->{ 'exceeded' } )
+        if ( $rule->{ 'exceeded' } )
         {
-            $cgi_app->prerun_mode( $self->{ 'exceeded' } );
+            $cgi_app->prerun_mode( $rule->{ 'exceeded' } );
             return;
         }
     }
@@ -440,6 +445,20 @@ sub _digest_key_in_timeslot
 # returns the 'key' relating to the current user / session etc.
 #
 sub _get_key { $_[0]->_get_redis_key }
+
+# return a set of key/value pairs for a specific key
+#
+sub _get_throttle_rule
+{
+    my $self = shift;
+    
+    my $rule = {
+        limit    => $self->{ 'limit' },
+        period   => $self->{ 'period' },
+        exceeded => $self->{ 'exceeded' },
+    };
+    return $rule;
+}
 
 =head1 AUTHOR
 
