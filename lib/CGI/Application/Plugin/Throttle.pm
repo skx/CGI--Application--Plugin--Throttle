@@ -256,15 +256,17 @@ always be '2'.
 sub count
 {
     my ($self) = (@_);
+    
+    my $key = $self->_get_key();
+    my $rule = $self->_get_throttle_rule();
 
     my $visits = 0;
-    my $max    = $self->{ 'limit' };
+    my $max    = $rule->{ 'limit' };
 
     if ( $self->{ 'redis' } )
     {
-        my $key = $self->_get_redis_key();
-        $key = $self->_digest_key_in_timeslot($key);
-        $visits = $self->{ 'redis' }->llen($key);
+        my $digest_key = $self->_digest_key_in_timeslot($key, $rule->{period});
+        $visits = $self->{ 'redis' }->llen($digest_key);
     }
     return ( $visits, $max );
 }
@@ -420,8 +422,8 @@ sub configure
 #
 sub _digest_key_in_timeslot
 {
-    my ($self, $key ) = @_;
-    sha512_base64( $key . q{#} . int(time() / $self->{ 'period' }) )
+    my ($self, $key, $period ) = @_;
+    sha512_base64( $key . q{#} . int(time() / $period ) )
 }
 
 # returns the 'key' relating to the current user / session etc.
