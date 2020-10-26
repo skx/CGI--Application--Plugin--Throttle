@@ -296,7 +296,7 @@ sub throttle_callback
     #
     # The key relating to this user.
     #
-    my $key = $self->_get_redis_key();
+    my $key = $self->_get_key();
 
     #
     # Use a timeslot defined digest key instead
@@ -436,6 +436,10 @@ sub _digest_key_in_timeslot
     my ($self, $key ) = @_;
     sha512_base64( $key . q{#} . int(time() / $self->{ 'period' }) )
 }
+
+# returns the 'key' relating to the current user / session etc.
+#
+sub _get_key { $_[0]->_get_redis_key }
 
 =head1 AUTHOR
 
