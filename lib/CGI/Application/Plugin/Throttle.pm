@@ -533,8 +533,24 @@ sub _get_special_throttle_rule
 
 sub _match_all
 {
-    my ($self, $filter,$keys) = @_;
-    return undef
+    my ($self, $filter, $keys) = @_;
+    foreach ( keys %$filter )
+    # we match if
+    # - the filter key exists in the other list of keys
+    # - and both are equal, but `undef` is not equal to `''` (an empty string)
+    {
+        return unless exists $keys->{$_};
+        return if
+            ( defined $filter->{$_} && $filter->{$_} )
+            ne
+            ( defined $keys->{$_}   && $keys->{$_}   )
+            
+            or
+            ( defined $filter->{$_} )
+            or
+            ( defined $keys->{$_}   )
+    }
+    return !undef
 }
 
 # returns the runmode if the this is true for the given rule and key
