@@ -494,6 +494,8 @@ sub _is_exceeded
 {
     my ($self, $rule, $keys) = @_;
     
+    return unless defined $keys;
+    
     my $redis = $self->{ 'redis' } or return;
 
     #
