@@ -256,15 +256,17 @@ always be '2'.
 sub count
 {
     my ($self) = (@_);
+    
+    my $key = $self->_get_key();
+    my $rule = $self->_get_throttle_rule();
 
     my $visits = 0;
-    my $max    = $self->{ 'limit' };
+    my $max    = $rule->{ 'limit' };
 
     if ( $self->{ 'redis' } )
     {
-        my $key = $self->_get_redis_key();
-        $key = $self->_digest_key_in_timeslot($key);
-        $visits = $self->{ 'redis' }->llen($key);
+        my $digest_key = $self->_digest_key_in_timeslot($key, $rule->{period});
+        $visits = $self->{ 'redis' }->llen($digest_key);
     }
     return ( $visits, $max );
 }
@@ -296,33 +298,20 @@ sub throttle_callback
     #
     # The key relating to this user.
     #
-    my $key = $self->_get_redis_key();
+    my $key = $self->_get_key();
 
     #
-    # Use a timeslot defined digest key instead
+    # Get throttle rule
     #
-    $key = $self->_digest_key_in_timeslot($key);
-
-    #
-    #  Increase the count, and set the expiry.
-    #
-    my $cur = $redis->lpush($key, 1); # or any arbitrary value would suffice
-    $redis->expire( $key, $self->{ 'period' } ) if $cur == 1;
-
+    my $rule = $self->_get_throttle_rule();
+    
     #
     #  If too many redirect.
     #
-    if ( ($cur) && ( $self->{ 'exceeded' } ) && ( $cur > $self->{ 'limit' } ) )
+    if ( my $exceeded = $self->_is_exceeded($rule, $key) )
     {
-
-        #
-        #  Redirect to a different run-mode..
-        #
-        if ( $self->{ 'exceeded' } )
-        {
-            $cgi_app->prerun_mode( $self->{ 'exceeded' } );
-            return;
-        }
+        $cgi_app->prerun_mode( $exceeded );
+        return;
     }
 
     #
@@ -433,8 +422,53 @@ sub configure
 #
 sub _digest_key_in_timeslot
 {
-    my ($self, $key ) = @_;
-    sha512_base64( $key . q{#} . int(time() / $self->{ 'period' }) )
+    my ($self, $key, $period ) = @_;
+    sha512_base64( $key . q{#} . int(time() / $period ) )
+}
+
+# returns the 'key' relating to the current user / session etc.
+#
+sub _get_key { $_[0]->_get_redis_key }
+
+# return a set of key/value pairs for a specific key
+#
+sub _get_throttle_rule
+{
+    my $self = shift;
+    
+    my $rule = {
+        limit    => $self->{ 'limit' },
+        period   => $self->{ 'period' },
+        exceeded => $self->{ 'exceeded' },
+    };
+    return $rule;
+}
+
+# returns the runmode if the this is true for the given rule and key
+#
+sub _is_exceeded
+{
+    my ($self, $rule, $key) = @_;
+    
+    my $redis = $self->{ 'redis' } or return;
+
+    #
+    # Use a timeslot defined digest key instead
+    #
+    my $digest_key = $self->_digest_key_in_timeslot($key, $rule->{period});
+
+    #
+    #  Increase the count, and set the expiry.
+    #
+    my $cur = $redis->lpush($digest_key, 1);
+    $redis->expire( $digest_key, $rule->{ 'period' } ) if $cur == 1;
+
+    #
+    #  If limit exceeded, redirect.
+    #
+    return $rule->{ exceeded } if $cur > $rule->{ limit };
+    
+    return
 }
 
 =head1 AUTHOR

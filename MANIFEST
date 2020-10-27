@@ -5,6 +5,9 @@ Makefile.PL
 README.md
 lib/CGI/Application/Plugin/Throttle.pm
 t/00-load.t
+t/11-get_redis_key.t
+t/12-get_rule.t
+t/90-simple-integration.t
 xt/manifest.t
 xt/pod.t
 xt/style-no-tabs.t
