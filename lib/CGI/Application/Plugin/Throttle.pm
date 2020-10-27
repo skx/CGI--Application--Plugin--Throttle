@@ -143,6 +143,11 @@ sub new
     #
     $self->{ 'exceeded' } = "slow_down";
 
+    #
+    #  Set the code reference for getting the throttle keys
+    #
+    $self->{ 'throttle_keys_callback' } = $supplied{ 'throttle_keys_callback' }
+    || \&_get_default_throttle_keys;
 
     bless( $self, $class );
     return $self;
@@ -161,7 +166,7 @@ sub throttle
 {
     my $cgi_app = shift;
     return $cgi_app->{ __throttle_obj } if $cgi_app->{ __throttle_obj };
-
+    
     #
     #  Setup the prefix of the Redis keys to default to the name of
     # the CGI::Application.
@@ -171,7 +176,11 @@ sub throttle
     # distinct prefixes.
     #
     my $throttle = $cgi_app->{ __throttle_obj } =
-      __PACKAGE__->new( prefix => ref $cgi_app );
+      __PACKAGE__->new(
+        prefix => ref($cgi_app),
+        throttle_keys_callback => $cgi_app->can('throttle_keys'),
+      )
+    ;
 
     return $throttle;
 }
@@ -257,7 +266,7 @@ sub count
 {
     my ($self) = (@_);
     
-    my $key = $self->_get_key();
+    my $keys = $self->_get_keys();
     my $rule = $self->_get_throttle_rule();
 
     my $visits = 0;
@@ -265,7 +274,7 @@ sub count
 
     if ( $self->{ 'redis' } )
     {
-        my $digest_key = $self->_digest_key_in_timeslot($key, $rule->{period});
+        my $digest_key = $self->_digest_key_in_timeslot($keys, $rule->{period});
         $visits = $self->{ 'redis' }->llen($digest_key);
     }
     return ( $visits, $max );
@@ -298,7 +307,7 @@ sub throttle_callback
     #
     # The key relating to this user.
     #
-    my $key = $self->_get_key();
+    my $keys = $self->_get_keys();
 
     #
     # Get throttle rule
@@ -308,7 +317,7 @@ sub throttle_callback
     #
     #  If too many redirect.
     #
-    if ( my $exceeded = $self->_is_exceeded($rule, $key) )
+    if ( my $exceeded = $self->_is_exceeded($rule, $keys) )
     {
         $cgi_app->prerun_mode( $exceeded );
         return;
@@ -413,6 +422,15 @@ sub configure
 
 }
 
+#
+# This is the original default list of values
+#
+sub _get_default_throttle_keys
+{
+  remote_user     => $ENV{ REMOTE_USER },
+  remote_addr     => $ENV{ REMOTE_ADDR },
+  http_user_agent => $ENV{ HTTP_USER_AGENT },
+}
 
 # returns a 'key'
 #
@@ -422,13 +440,39 @@ sub configure
 #
 sub _digest_key_in_timeslot
 {
-    my ($self, $key, $period ) = @_;
-    sha512_base64( $key . q{#} . int(time() / $period ) )
+    my ($self, $keys, $period ) = @_;
+    my @throttle_keys = @$keys;
+    
+    # we need to preserve order and can not use random order of a hash
+    my (@keys, @vals);
+    for ( my $i =0  ; $i < @throttle_keys; )
+    {
+      push @keys, $throttle_keys[$i++];
+      push @vals, $throttle_keys[$i++] || '* * *';
+    }
+    my $key_string = join q{:}, @vals;
+    
+    $key_string .= q{#} . int(time() / $period );
+
+    sha512_base64( $key_string )
 }
 
-# returns the 'key' relating to the current user / session etc.
+# returns the 'keys' relating to the current user / session etc.
 #
-sub _get_key { $_[0]->_get_redis_key }
+sub _get_keys
+{
+    my $self = shift;
+    my @throttle_keys = $self->{ throttle_keys_callback }->();
+
+    # return undef, as an explicit instruction to ignote throttling at all
+    return undef if scalar(@throttle_keys) == 1 && !defined($throttle_keys[0]);
+    
+    # prepend the list with the prefix if missing
+    unshift @throttle_keys, (prefix => $self->{ prefix } )
+      unless exists  {@throttle_keys}->{ prefix };
+    
+    return \@throttle_keys;
+}
 
 # return a set of key/value pairs for a specific key
 #
@@ -448,14 +492,16 @@ sub _get_throttle_rule
 #
 sub _is_exceeded
 {
-    my ($self, $rule, $key) = @_;
+    my ($self, $rule, $keys) = @_;
+    
+    return unless defined $keys;
     
     my $redis = $self->{ 'redis' } or return;
 
     #
     # Use a timeslot defined digest key instead
     #
-    my $digest_key = $self->_digest_key_in_timeslot($key, $rule->{period});
+    my $digest_key = $self->_digest_key_in_timeslot($keys, $rule->{period});
 
     #
     #  Increase the count, and set the expiry.
