@@ -603,6 +603,92 @@ sub _is_exceeded
     return
 }
 
+
+=head1 CALLBACKS
+
+=head2 C<throttle_keys>
+
+This callback will be called to give the developer the option to use alternative
+keys. It must return a list of key value pairs, and the plugin will preserve the
+order. Default these are C<remote_user>, C<remote_addr>, and C<http_user_agent>.
+
+=for example begin
+
+    sub throttle_keys {
+        remote_user     => $ENV{ REMOTE_USER },
+        remote_addr     => $ENV{ REMOTE_ADDR },
+        http_user_agent => $ENV{ HTTP_USER_AGENT },
+    }
+
+=for example end
+
+This callback can be used to do more fancy things and add a key for run-modes as
+in:
+
+=for example begin
+
+    sub throttle_keys {
+        my $self = shift;
+        
+        return (
+            runmode_grp => $self->_get_runmode_group(),
+            ...         => ...
+        )
+    }
+
+=for example end
+
+Returning a explicit C<undef> means that no throttling will happen, at all; If
+the call back returns an empty list, all incoming request will be throttled and
+no difference will be made from where the request comes from.
+
+=for example begin
+
+    sub throttle_keys {
+        return undef if $ENV{REMOTE_USER} eq 'superuser';
+        return ( );
+    }
+
+=for example end
+
+=head2 C<throttle_spec>
+
+This callback can be used to specify different set of throttle rules based on
+filters that must match with the throttle keys. This callback must return a list
+of filter/settings pairs that will be checked against the current throttle keys.
+It can have a additional last set of throttle rules (it is an odd sized list),
+which will then be used as a default.
+
+The selected rules willbe merged with the settings from the Cconfigure> call, or
+the defaults from the module itself.
+
+Keys mentioned in the filter must be present in the current throttle keys/params
+in order to match. The value can be C<undef>, meaning that the throttle param
+must exist and be undefined.
+
+=for example begin
+
+    sub throttle_spec {
+        { remote_user => undef } =>
+        {
+            limit    => 5,
+            exceeded => 'we_dont_like_strangers'
+        },
+        
+        { runmode_grp => 'pdf_report' } =>
+        {
+            limit    => 10,
+            period   => 3600,
+            exceeded => 'these_are_very_expensive'
+        }
+        
+        {
+            limit    => rnd * 10 # making people go crazy why? 
+        }
+    }
+
+=for example end
+
 =head1 AUTHOR
 
 Steve Kemp <steve@steve.org.uk>
