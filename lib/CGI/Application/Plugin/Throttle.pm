@@ -60,7 +60,7 @@ CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application
 
 =head1 VERSION
 
-This is version '0.6'
+This is version '0.7'
 
 
 
@@ -93,7 +93,7 @@ throttle rules specified by filters that need to match the parameters.
 use strict;
 use warnings;
 
-our $VERSION = '0.6';
+our $VERSION = '0.7';
 
 use Digest::SHA qw/sha512_base64/;
 
