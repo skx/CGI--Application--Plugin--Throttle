@@ -358,9 +358,9 @@ L<CGI::Application/setup> method there will be code similar to this:
 
     sub setup {
         my $self = shift;
-
+        
         my $r = Redis->new();
-
+        
         $self->throttle()->configure( redis => $r,
                                       # .. other options here
                                     )
