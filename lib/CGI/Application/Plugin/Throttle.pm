@@ -534,21 +534,37 @@ sub _get_special_throttle_rule
 sub _match_all
 {
     my ($self, $filter, $keys) = @_;
+    
+    my $lookup = { @$keys };
+    
     foreach ( keys %$filter )
-    # we match if
-    # - the filter key exists in the other list of keys
-    # - and both are equal, but `undef` is not equal to `''` (an empty string)
+    #
+    # In natural language, not in Perl, the below test does match:
+    #
+    #  "if both are the same"
+    #
+    # that is, under the precondition that both exists,
+    # that both defined strings are the same, or both are undefined
+    #
+    # normally,in string comparision, `undef` is compared as an empty string
+    #
+    # take a class in boolean algebra and learn about The Morgan etc
+    #
+    # we do not match if:
+    #
     {
-        return unless exists $keys->{$_};
-        return if
+        return unless exists $lookup->{$_};
+        
+        next if 
             ( defined $filter->{$_} && $filter->{$_} )
-            ne
-            ( defined $keys->{$_}   && $keys->{$_}   )
-            
-            or
-            ( defined $filter->{$_} )
-            or
-            ( defined $keys->{$_}   )
+            eq
+            ( defined $lookup->{$_} && $lookup->{$_} );
+        
+        return if
+            ( defined $filter->{$_}                  )
+            ||
+            ( defined $lookup->{$_}                  );
+        
     }
     return !undef
 }
