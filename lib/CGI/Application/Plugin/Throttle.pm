@@ -214,31 +214,17 @@ sub throttle
 
 
 
-=head2 C<_get_redis_key>
-
-Build and return the Redis key to use for this particular remote request.
-
-The key is built from the C<prefix> string set in L</"configure"> method, along
-with:
-
-=over
-
-=item *
-
-The remote IP address of the client.
-
-=item *
-
-The remote HTTP Basic-Auth username of the client.
-
-=item *
-
-The remote User-Agent.
-
-=back
-
-=cut
-
+# sub _get_redis_key>
+#
+# Build and return the Redis key to use for this particular remote request.
+#
+# The key is built from the C<prefix> string set in L</"configure"> method,
+# along with:
+#
+# * The remote IP address of the client.
+# * The remote HTTP Basic-Auth username of the client.
+# * The remote User-Agent.
+#
 sub _get_redis_key
 {
     my $self = shift;
@@ -309,18 +295,16 @@ sub count
 
 
 
-=head2 C<throttle_callback>
-
-This method is invoked by L<CGI::Application>, as a hook.
-
-The method is responsible for determining whether the remote client which
-triggered the current request has exceeded their request threshold.
-
-If the client has made too many requests their intended run-mode will be changed
-to redirect them.
-
-=cut
-
+# sub throttle_callback
+#
+# This method is invoked by L<CGI::Application>, as a hook.
+#
+# The method is responsible for determining whether the remote client which
+# triggered the current request has exceeded their request threshold.
+#
+# If the client has made too many requests their intended run-mode will be
+# changed to redirect them.
+#
 sub throttle_callback
 {
     my $cgi_app = shift;
