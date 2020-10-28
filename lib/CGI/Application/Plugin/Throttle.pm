@@ -67,11 +67,11 @@ This is version '0.6'
 =head1 DESCRIPTION
 
 This module allows you to enforce a throttle on incoming requests to your
-application, based upon the remote IP address.
+application, based upon the remote IP address, or other parameters.
 
-This module stores a count of accesses in a Redis key-store, and once hits from
-a particular source exceed the specified threshold the user will be redirected
-to the run-mode you've specified.
+This module stores a count of accesses in a Redis key-store, and once hits
+exceed the specified threshold the user will be redirected to the run-mode
+you've specified.
 
 
 
@@ -82,9 +82,9 @@ example, will all suffer if the threshold is too low.  We attempt to mitigate
 this by building the key using a combination of the remote IP address, and the
 remote user-agent.
 
-This module will apply to all run-modes, because it seems likely that this is
-the most common case.  If you have a preference for some modes to be excluded
-please do contact the author.
+This module has added great flexibillity to change the parameters being used for
+generating the redis key. It now also has the posibillity to select different
+throttle rules specified by filters that need to match the parameters.
 
 =cut
 
@@ -622,6 +622,10 @@ sub _is_exceeded
 =head1 AUTHOR
 
 Steve Kemp <steve@steve.org.uk>
+
+=head1 CONTRIBUTORS
+
+Theo van Hoesel <tvanhoesel@perceptyx.com>
 
 =head1 COPYRIGHT AND LICENSE
 
