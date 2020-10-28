@@ -31,7 +31,28 @@ CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application
       ...
       
     }
-
+    
+    sub throttle_keys {
+        my $self = shift;
+        
+        # do not throttle at all when returning `undef`
+        return undef if %ENV{DEVELOPMENT};
+        
+        return (
+            remote_addr => $ENV{REMOTE_ADDR},
+            
+            maybe
+            pwd_recover => $self->_is_password_recovery
+        );
+    }
+    
+    sub throttle_spec {
+        { pwd_recover => 1 } =>
+        {  limit =>     5, period => 300, exceeded => 'stay_out' }
+        
+        { remote_addr => '127.0.0.1' }
+        { limit => 10_000, period =>   1, exceeded => 'get_home' }
+    }
 
 =cut
 
