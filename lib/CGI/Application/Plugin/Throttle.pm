@@ -148,6 +148,11 @@ sub new
     #
     $self->{ 'throttle_keys_callback' } = $supplied{ 'throttle_keys_callback' }
     || \&_get_default_throttle_keys;
+    
+    #
+    #  Set the code reference for getting throttle specific rules
+    #
+    $self->{ 'throttle_spec_callback' } = $supplied{ 'throttle_spec_callback' };
 
     bless( $self, $class );
     return $self;
@@ -179,6 +184,7 @@ sub throttle
       __PACKAGE__->new(
         prefix => ref($cgi_app),
         throttle_keys_callback => $cgi_app->can('throttle_keys'),
+        throttle_spec_callback => $cgi_app->can('throttle_spec'),
       )
     ;
 
@@ -267,7 +273,7 @@ sub count
     my ($self) = (@_);
     
     my $keys = $self->_get_keys();
-    my $rule = $self->_get_throttle_rule();
+    my $rule = $self->_get_throttle_rule( $keys );
 
     my $visits = 0;
     my $max    = $rule->{ 'limit' };
@@ -312,7 +318,7 @@ sub throttle_callback
     #
     # Get throttle rule
     #
-    my $rule = $self->_get_throttle_rule();
+    my $rule = $self->_get_throttle_rule( $keys );
     
     #
     #  If too many redirect.
@@ -479,6 +485,22 @@ sub _get_keys
 sub _get_throttle_rule
 {
     my $self = shift;
+    my $keys = shift;
+
+    return unless defined $keys;
+
+    my $default_rule = $self->_get_default_throttle_rule();
+    my $special_rule = $self->_get_special_throttle_rule( $keys );
+    my $throttle_rule =  { %$default_rule, %$special_rule };
+
+    return $throttle_rule
+}
+
+# returns the default set of rules, set by $throttle->configure
+#
+sub _get_default_throttle_rule
+{
+    my $self = shift;
     
     my $rule = {
         limit    => $self->{ 'limit' },
@@ -486,6 +508,65 @@ sub _get_throttle_rule
         exceeded => $self->{ 'exceeded' },
     };
     return $rule;
+}
+
+# returns the first rule whre all the filters are matched against the keys
+#
+sub _get_special_throttle_rule
+{
+    my ( $self, $keys ) = @_;
+    return { } unless $self->{ throttle_spec_callback };
+    
+    my @spec = $self->{ throttle_spec_callback }->();
+    
+    # set initial rule to an empty set, or the last spec if there is an odd list
+    my $rule = scalar @spec %2 ? pop @spec : {};
+
+    while ( my($filter, $rule ) = splice @spec, 0 , 2 )
+    {
+        next unless $self->_match_all( $filter, $keys );
+        return $rule
+    }
+    
+    return $rule;
+}
+
+sub _match_all
+{
+    my ($self, $filter, $keys) = @_;
+    
+    my $lookup = { @$keys };
+    
+    foreach ( keys %$filter )
+    #
+    # In natural language, not in Perl, the below test does match:
+    #
+    #  "if both are the same"
+    #
+    # that is, under the precondition that both exists,
+    # that both defined strings are the same, or both are undefined
+    #
+    # normally,in string comparision, `undef` is compared as an empty string
+    #
+    # take a class in boolean algebra and learn about The Morgan etc
+    #
+    # we do not match if:
+    #
+    {
+        return unless exists $lookup->{$_};
+        
+        next if 
+            ( defined $filter->{$_} && $filter->{$_} )
+            eq
+            ( defined $lookup->{$_} && $lookup->{$_} );
+        
+        return if
+            ( defined $filter->{$_}                  )
+            ||
+            ( defined $lookup->{$_}                  );
+        
+    }
+    return !undef
 }
 
 # returns the runmode if the this is true for the given rule and key

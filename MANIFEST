@@ -9,6 +9,7 @@ t/11-get_keys-default.t
 t/11-get_keys-list.t
 t/11-get_keys-undef.t
 t/12-get_rule.t
+t/90-callback-integration.t
 t/90-simple-integration.t
 xt/manifest.t
 xt/pod.t
