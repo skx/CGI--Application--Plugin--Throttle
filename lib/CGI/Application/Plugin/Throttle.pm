@@ -31,7 +31,28 @@ CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application
       ...
       
     }
-
+    
+    sub throttle_keys {
+        my $self = shift;
+        
+        # do not throttle at all when returning `undef`
+        return undef if %ENV{DEVELOPMENT};
+        
+        return (
+            remote_addr => $ENV{REMOTE_ADDR},
+            
+            maybe
+            pwd_recover => $self->_is_password_recovery
+        );
+    }
+    
+    sub throttle_spec {
+        { pwd_recover => 1 } =>
+        {  limit =>     5, period => 300, exceeded => 'stay_out' }
+        
+        { remote_addr => '127.0.0.1' }
+        { limit => 10_000, period =>   1, exceeded => 'get_home' }
+    }
 
 =cut
 
@@ -39,18 +60,18 @@ CGI::Application::Plugin::Throttle - Rate-Limiting for CGI::Application
 
 =head1 VERSION
 
-This is version '0.6'
+This is version '0.7'
 
 
 
 =head1 DESCRIPTION
 
 This module allows you to enforce a throttle on incoming requests to your
-application, based upon the remote IP address.
+application, based upon the remote IP address, or other parameters.
 
-This module stores a count of accesses in a Redis key-store, and once hits from
-a particular source exceed the specified threshold the user will be redirected
-to the run-mode you've specified.
+This module stores a count of accesses in a Redis key-store, and once hits
+exceed the specified threshold the user will be redirected to the run-mode
+you've specified.
 
 
 
@@ -61,9 +82,9 @@ example, will all suffer if the threshold is too low.  We attempt to mitigate
 this by building the key using a combination of the remote IP address, and the
 remote user-agent.
 
-This module will apply to all run-modes, because it seems likely that this is
-the most common case.  If you have a preference for some modes to be excluded
-please do contact the author.
+This module has added great flexibillity to change the parameters being used for
+generating the redis key. It now also has the posibillity to select different
+throttle rules specified by filters that need to match the parameters.
 
 =cut
 
@@ -72,7 +93,7 @@ please do contact the author.
 use strict;
 use warnings;
 
-our $VERSION = '0.6';
+our $VERSION = '0.7';
 
 use Digest::SHA qw/sha512_base64/;
 
@@ -193,31 +214,17 @@ sub throttle
 
 
 
-=head2 C<_get_redis_key>
-
-Build and return the Redis key to use for this particular remote request.
-
-The key is built from the C<prefix> string set in L</"configure"> method, along
-with:
-
-=over
-
-=item *
-
-The remote IP address of the client.
-
-=item *
-
-The remote HTTP Basic-Auth username of the client.
-
-=item *
-
-The remote User-Agent.
-
-=back
-
-=cut
-
+# sub _get_redis_key>
+#
+# Build and return the Redis key to use for this particular remote request.
+#
+# The key is built from the C<prefix> string set in L</"configure"> method,
+# along with:
+#
+# * The remote IP address of the client.
+# * The remote HTTP Basic-Auth username of the client.
+# * The remote User-Agent.
+#
 sub _get_redis_key
 {
     my $self = shift;
@@ -288,18 +295,16 @@ sub count
 
 
 
-=head2 C<throttle_callback>
-
-This method is invoked by L<CGI::Application>, as a hook.
-
-The method is responsible for determining whether the remote client which
-triggered the current request has exceeded their request threshold.
-
-If the client has made too many requests their intended run-mode will be changed
-to redirect them.
-
-=cut
-
+# sub throttle_callback
+#
+# This method is invoked by L<CGI::Application>, as a hook.
+#
+# The method is responsible for determining whether the remote client which
+# triggered the current request has exceeded their request threshold.
+#
+# If the client has made too many requests their intended run-mode will be
+# changed to redirect them.
+#
 sub throttle_callback
 {
     my $cgi_app = shift;
@@ -353,9 +358,9 @@ L<CGI::Application/setup> method there will be code similar to this:
 
     sub setup {
         my $self = shift;
-
+        
         my $r = Redis->new();
-
+        
         $self->throttle()->configure( redis => $r,
                                       # .. other options here
                                     )
@@ -598,9 +603,99 @@ sub _is_exceeded
     return
 }
 
+
+=head1 CALLBACKS
+
+=head2 C<throttle_keys>
+
+This callback will be called to give the developer the option to use alternative
+keys. It must return a list of key value pairs, and the plugin will preserve the
+order. Default these are C<remote_user>, C<remote_addr>, and C<http_user_agent>.
+
+=for example begin
+
+    sub throttle_keys {
+        remote_user     => $ENV{ REMOTE_USER },
+        remote_addr     => $ENV{ REMOTE_ADDR },
+        http_user_agent => $ENV{ HTTP_USER_AGENT },
+    }
+
+=for example end
+
+This callback can be used to do more fancy things and add a key for run-modes as
+in:
+
+=for example begin
+
+    sub throttle_keys {
+        my $self = shift;
+        
+        return (
+            runmode_grp => $self->_get_runmode_group(),
+            ...         => ...
+        )
+    }
+
+=for example end
+
+Returning a explicit C<undef> means that no throttling will happen, at all; If
+the call back returns an empty list, all incoming request will be throttled and
+no difference will be made from where the request comes from.
+
+=for example begin
+
+    sub throttle_keys {
+        return undef if $ENV{REMOTE_USER} eq 'superuser';
+        return ( );
+    }
+
+=for example end
+
+=head2 C<throttle_spec>
+
+This callback can be used to specify different set of throttle rules based on
+filters that must match with the throttle keys. This callback must return a list
+of filter/settings pairs that will be checked against the current throttle keys.
+It can have a additional last set of throttle rules (it is an odd sized list),
+which will then be used as a default.
+
+The selected rules willbe merged with the settings from the Cconfigure> call, or
+the defaults from the module itself.
+
+Keys mentioned in the filter must be present in the current throttle keys/params
+in order to match. The value can be C<undef>, meaning that the throttle param
+must exist and be undefined.
+
+=for example begin
+
+    sub throttle_spec {
+        { remote_user => undef } =>
+        {
+            limit    => 5,
+            exceeded => 'we_dont_like_strangers'
+        },
+        
+        { runmode_grp => 'pdf_report' } =>
+        {
+            limit    => 10,
+            period   => 3600,
+            exceeded => 'these_are_very_expensive'
+        }
+        
+        {
+            limit    => rnd * 10 # making people go crazy why? 
+        }
+    }
+
+=for example end
+
 =head1 AUTHOR
 
 Steve Kemp <steve@steve.org.uk>
+
+=head1 CONTRIBUTORS
+
+Theo van Hoesel <tvanhoesel@perceptyx.com>
 
 =head1 COPYRIGHT AND LICENSE
 
